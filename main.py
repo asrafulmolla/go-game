@@ -4,7 +4,7 @@ from go_logic import GoGame, BLACK, WHITE, EMPTY
 from ai import GoAI
 
 # Constants
-BOARD_SIZE = 7
+BOARD_SIZE = 9
 CELL_SIZE = 60
 MARGIN = 60
 GRID_SIZE = (BOARD_SIZE - 1) * CELL_SIZE
