@@ -1,80 +1,80 @@
-# Go Game: Technical Documentation & Execution Flow
+# গো গেম (Go Game): টেকনিক্যাল ডকুমেন্টেশন এবং কাজের ধারা
 
-This document explains the internal working mechanism of the Go Game, detailing how the Human (Black) and AI (White) interact, and which functions are triggered in each iteration.
-
----
-
-## 1. System Architecture
-
-The project is divided into three core modules:
-
-1.  **`main.py` (GUI & Controller):** Handles Pygame rendering, mouse inputs, and the main game loop.
-2.  **`go_logic.py` (Rule Engine):** Manages the board state, validates moves, handles stone captures, and calculates scores.
-3.  **`ai.py` (Intelligence):** Implements the Minimax algorithm with Alpha-Beta pruning to decide the AI's moves.
+এই ডকুমেন্টটিতে গো গেমের অভ্যন্তরীণ কাজের পদ্ধতি, মানুষ (কালো পাথর) এবং কৃত্রিম বুদ্ধিমত্তা বা এআই (সাদা পাথর) এর মধ্যে কিভাবে যোগাযোগ হয় এবং প্রতিটি ধাপে কোন ফাংশনগুলো কাজ করে তা বিস্তারিতভাবে আলোচনা করা হয়েছে।
 
 ---
 
-## 2. The Move Lifecycle (Step-by-Step)
+## ১. সিস্টেম আর্কিটেকচার (System Architecture)
 
-### A. Human Turn (Black)
+এই প্রজেক্টটি তিনটি প্রধান মডিউলে বিভক্ত:
 
-1.  **Input Detection:** The `main_loop` in `main.py` constantly listens for events. When you click the board, `pygame.MOUSEBUTTONDOWN` is triggered.
-2.  **Coordinate Mapping:** The function `get_cell_from_pos(event.pos)` converts your pixel click (e.g., 250, 300) into a board grid coordinate (e.g., Row 4, Col 5).
-3.  **Placement Request:** `self.game.place_stone(r, c, BLACK)` is called in `go_logic.py`.
-    - **Validation:** It first calls `is_valid_move()`. This checks:
-      - Is the spot empty?
-      - **Suicide Rule:** Would placing this stone leave it with 0 liberties (and not capture anything)?
-      - **Ko Rule:** Does this move repeat a previous board state?
-    - **Executing Move:** If valid, the board is updated: `self.board[r, c] = BLACK`.
-    - **Capture Check:** It looks at the 4 neighboring stones (Up, Down, Left, Right). If an opponent's group has 0 liberties (checked via `get_liberties()`), those stones are removed from the board.
-    - **Turn Switch:** `self.current_player` is set to `WHITE`.
-
-### B. AI Turn (White)
-
-1.  **Turn Detection:** The `main_loop` sees `current_player == WHITE`.
-2.  **Think Phase:** `ai.get_best_move(self.game)` is called in `ai.py`.
-3.  **Search (Minimax):**
-    - The AI looks ahead (Depth 2). It simulates every possible legal move.
-    - **`clone_game()`:** For every simulation, it creates a virtual copy of the board so it doesn't mess up the real game.
-    - **`evaluate()`:** For each simulated board, it calculates a score based on:
-      - Stones on board + Territory.
-      - **Liberties:** How "safe" or "breathable" its groups are.
-    - **Alpha-Beta Pruning:** It ignores "bad" paths early to save processing time.
-4.  **Action:** The AI returns the coordinate with the highest score.
-5.  **Execution:** `self.game.place_stone(r, c, WHITE)` is called (using the same logic as the human turn).
-6.  **Turn Switch:** `self.current_player` is set back to `BLACK`.
+1.  **`main.py` (GUI ও কন্ট্রোলার):** এটি পাইগেম (Pygame) রেন্ডারিং, মাউস ইনপুট এবং গেমের মূল লুপ নিয়ন্ত্রণ করে।
+2.  **`go_logic.py` (রুল ইঞ্জিন):** এটি বোর্ডের অবস্থা, চালের বৈধতা যাচাই, পাথর ক্যাপচার এবং স্কোর গণনা পরিচালনা করে।
+3.  **`ai.py` (ইন্টেলিজেন্স):** এটি মিনিম্যাক্স (Minimax) অ্যালগরিদম এবং আলফা-বিটা প্রুনিং (Alpha-Beta pruning) ব্যবহার করে এআই-এর চাল নির্ধারণ করে।
 
 ---
 
-## 3. Key Functions Reference
+## ২. একটি চালের জীবনচক্র (ধাপে ধাপে)
+
+### ক. মানুষের চাল (কালো পাথর)
+
+1.  **ইনপুট শনাক্তকরণ:** `main.py`-এর `main_loop` প্রতিনিয়ত ইভেন্টগুলো পর্যবেক্ষণ করে। যখন আপনি বোর্ডে ক্লিক করেন, তখন `pygame.MOUSEBUTTONDOWN` ট্রিগার হয়।
+2.  **কোঅর্ডিনেট ম্যাপিং:** `get_cell_from_pos(event.pos)` ফাংশনটি আপনার মাউস ক্লিকের পিক্সেল পজিশনকে (যেমন: ২৫০, ৩০০) গ্রিড কোঅর্ডিনেটে (যেমন: সারি ৪, কলাম ৫) রূপান্তর করে।
+3.  **চাল দেওয়ার অনুরোধ:** `go_logic.py`-এ `self.game.place_stone(r, c, BLACK)` কল করা হয়।
+    - **বৈধতা যাচাই:** এটি প্রথমে `is_valid_move()` কল করে। এতে চেক করা হয়:
+      - জায়গাটি খালি কি না?
+      - **সুইসাইড রুল (Suicide Rule):** এই পাথরটি বসানোর ফলে পাথরটির কি কোনো 'liberty' বা নিঃশ্বাস নেওয়ার জায়গা থাকবে?
+      - **কো রুল (Ko Rule):** এই চালটি কি বোর্ডের আগের কোনো অবস্থাকে পুনরাবৃত্তি করছে?
+    - **চাল সম্পন্ন করা:** চাল বৈধ হলে বোর্ড আপডেট করা হয়: `self.board[r, c] = BLACK`।
+    - **ক্যাপচার চেক:** এটি আশেপাশের ৪টি পাথর (উপরে, নিচে, বামে, ডানে) পরীক্ষা করে। যদি বিপক্ষ দলের পাথরের কোনো 'liberty' বা নিঃশ্বাস নেওয়ার জায়গা না থাকে (`get_liberties()` দিয়ে চেক করা হয়), তবে সেই পাথরগুলো বোর্ড থেকে সরিয়ে ফেলা হয়।
+    - **পালা পরিবর্তন:** `self.current_player`-কে `WHITE`-এ সেট করা হয়।
+
+### খ. এআই-এর চাল (সাদা পাথর)
+
+1.  **পালা শনাক্তকরণ:** `main_loop` যখন দেখে `current_player == WHITE`, তখন এআই কাজ শুরু করে।
+2.  **চিন্তার ধাপ:** `ai.py`-এ `ai.get_best_move(self.game)` কল করা হয়।
+3.  **অনুসন্ধান (Minimax):**
+    - এআই পরবর্তী ২ ধাপ পর্যন্ত চালগুলো পরীক্ষা করে। এটি প্রতিটি সম্ভাব্য চালকে ভার্চুয়ালি চালিয়ে দেখে।
+    - **`clone_game()`:** প্রতিটি সিমুলেশনের জন্য এটি বোর্ডের একটি নকল তৈরি করে যাতে আসল গেমের কোনো ক্ষতি না হয়।
+    - **`evaluate()`:** প্রতিটি সিমুলেটেড বোর্ডের জন্য এটি একটি স্কোর গণনা করে, যার ভিত্তি হলো:
+      - বোর্ডে পাথরের সংখ্যা + দখল করা এলাকা (Territory)।
+      - **লিবার্টি (Liberties):** পাথরের গ্রুপগুলো কতটা নিরাপদ বা তাদের নিঃশ্বাস নেওয়ার জায়গা কতটা।
+    - **আলফা-বিটা প্রুনিং:** এটি অপ্রয়োজনীয় বা খারাপ চালগুলোর চিন্তা বাদ দিয়ে প্রসেসিং সময় বাঁচায়।
+4.  **সিদ্ধান্ত:** এআই সবচেয়ে বেশি স্কোর পাওয়া কোঅর্ডিনেটটি নির্বাচন করে।
+5.  **চাল প্রয়োগ:** `self.game.place_stone(r, c, WHITE)` কল করা হয় (ঠিক মানুষের চালের মতো একই লজিক ব্যবহার করে)।
+6.  **পালা পরিবর্তন:** `self.current_player`-কে আবার `BLACK`-এ সেট করা হয়।
+
+---
+
+## ৩. গুরুত্বপূর্ণ ফাংশনসমূহ
 
 ### `go_logic.py`
 
-| Function                   | Role                                                                                            |
-| :------------------------- | :---------------------------------------------------------------------------------------------- |
-| `get_liberties(r, c)`      | Uses a Stack-based Flood Fill to find all empty points (liberties) around a group of stones.    |
-| `place_stone(r, c, color)` | The "Master" function for making a move. Orchestrates validation, capture, and turn management. |
-| `is_valid_move(...)`       | The "Referee". Enforces Go rules (Ko, Suicide, Overlap).                                        |
-| `get_territory()`          | Scans the board to see which empty areas are completely surrounded by one color.                |
-| `score()`                  | Returns the final score: `Stones + Territory + Komi (6.5 for White)`.                           |
+| ফাংশন                      | ভূমিকা                                                                                                 |
+| :------------------------- | :----------------------------------------------------------------------------------------------------- |
+| `get_liberties(r, c)`      | একটি পাথরের গ্রুপের চারপাশে কতগুলো খালি জায়গা (liberties) আছে তা খুঁজে বের করে।                        |
+| `place_stone(r, c, color)` | একটি চাল দেওয়ার মূল ফাংশন। এটি বৈধতা যাচাই, পাথর সংগ্রহ এবং পালা পরিবর্তন নিয়ন্ত্রণ করে।               |
+| `is_valid_move(...)`       | এটি একজন রেফারির মতো কাজ করে। এটি গো গেমের আইনগুলো (Ko, Suicide) প্রয়োগ করে।                           |
+| `get_territory()`          | বোর্ড স্ক্যান করে দেখে কোন খালি এলাকাগুলো কোন রঙের পাথর দিয়ে ঘেরা।                                     |
+| `score()`                  | চূড়ান্ত স্কোর প্রদান করে: `পাথর সংখ্যা + দখল করা এলাকা + কোমি (সাদা পাথরের জন্য ৬.৫ পয়েন্ট অতিরিক্ত)`. |
 
 ### `ai.py`
 
-| Function           | Role                                                                                               |
-| :----------------- | :------------------------------------------------------------------------------------------------- |
-| `minimax(...)`     | Recursive function that builds a "tree" of possible future moves.                                  |
-| `evaluate(game)`   | The "Judge". Decides if a board position is "Good" or "Bad" for the AI.                            |
-| `clone_game(game)` | Essential for safety; allows the AI to "dream" about moves without changing the actual game board. |
+| ফাংশন              | ভূমিকা                                                                                                                   |
+| :----------------- | :----------------------------------------------------------------------------------------------------------------------- |
+| `minimax(...)`     | একটি রিকার্সিভ ফাংশন যা ভবিষ্যতের সম্ভাব্য চালগুলোর একটি গাছ (tree) তৈরি করে।                                            |
+| `evaluate(game)`   | এটি বিচারকের মতো কাজ করে। এটি নির্ধারণ করে যে বোর্ডের অবস্থা এআই-এর জন্য ভালো নাকি খারাপ।                                |
+| `clone_game(game)` | এটি নিরাপত্তার জন্য অত্যন্ত জরুরি; এটি এআই-কে আসল বোর্ড পরিবর্তন না করেই ভবিষ্যতের চালগুলো নিয়ে "কল্পনা" করার সুযোগ দেয়। |
 
 ### `main.py`
 
-| Function       | Role                                                                         |
-| :------------- | :--------------------------------------------------------------------------- |
-| `draw_board()` | Renders the wood texture, grid lines, stones, and the "Last Move" indicator. |
-| `main_loop()`  | The "Heartbeat". Runs at 30 FPS, checking for input and updating the UI.     |
+| ফাংশন          | ভূমিকা                                                                                     |
+| :------------- | :----------------------------------------------------------------------------------------- |
+| `draw_board()` | বোর্ডের কাঠের টেক্সচার, গ্রিড লাইন, পাথর এবং "শেষ চাল" নির্দেশক রেন্ডার করে।               |
+| `main_loop()`  | এটি গেমের হৃদপিণ্ড। এটি প্রতি সেকেন্ডে ৩০ বার (30 FPS) চলে এবং ইনপুট চেক ও ইউআই আপডেট করে। |
 
 ---
 
-## 4. Logical Flow Summary
+## ৪. সংক্ষেপে লজিক্যাল ফ্লো
 
-`User Clicks` -> `main.py (GUI)` -> `go_logic.py (Rules)` -> `Capture/Score Update` -> `ai.py (Thinking)` -> `go_logic.py (AI Move)` -> `UI Update`.
+`ইউজার ক্লিক` -> `main.py (GUI)` -> `go_logic.py (Rules)` -> `ক্যাপচার/স্কোর আপডেট` -> `ai.py (AI Thinking)` -> `go_logic.py (AI Move)` -> `UI আপডেট`|
